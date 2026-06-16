@@ -8,7 +8,6 @@ import {
   Cpu,
   Database,
   RefreshCw,
-  LogIn,
   LogOut,
   ChevronLeft,
   ShieldCheck,
@@ -21,12 +20,23 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 
+interface SystemStats {
+  model_accuracy_r2: string | number
+  model_rmse: string | number
+  improvement_pct: string | number
+  traffic_records: number
+  traffic_file_size_kb: number
+  cpu_usage_pct: number
+  ram_usage_pct: number
+  weather_override: string | null
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState("")
   const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<SystemStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(false)
   const [isRetraining, setIsRetraining] = useState(false)
   const [weatherOverride, setWeatherOverride] = useState<string | null>(null)
@@ -52,6 +62,7 @@ export default function AdminPage() {
     if (token) {
       fetchStats()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const showNotification = (message: string, type: "error" | "success" | "alert" = "success") => {
@@ -76,8 +87,9 @@ export default function AdminPage() {
       localStorage.setItem("admin_token", data.token)
       setToken(data.token)
       showNotification("🔐 Admin authenticated successfully!", "success")
-    } catch (err: any) {
-      setError(err.message || "Login failed")
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Login failed"
+      setError(errMsg)
       showNotification("❌ Authentication failed", "error")
     } finally {
       setIsLoggingIn(false)
@@ -127,7 +139,7 @@ export default function AdminPage() {
       setWeatherOverride(condition)
       showNotification(`🌤️ Weather override set to: ${condition || "Live Telemetry"}`, "success")
       fetchStats()
-    } catch (err) {
+    } catch {
       showNotification("❌ Failed to update weather override", "error")
     }
   }
@@ -149,7 +161,7 @@ export default function AdminPage() {
         showNotification("✅ ML Models retrained successfully and updated!", "success")
         fetchStats()
       }, 4000)
-    } catch (err) {
+    } catch {
       setIsRetraining(false)
       showNotification("❌ Failed to start retraining", "error")
     }
@@ -184,8 +196,9 @@ export default function AdminPage() {
       setIngestDate("")
       setIngestVehicles("")
       fetchStats()
-    } catch (err: any) {
-      showNotification(`❌ ${err.message}`, "error")
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Ingestion failed"
+      showNotification(`❌ ${errMsg}`, "error")
     } finally {
       setIsIngesting(false)
     }
