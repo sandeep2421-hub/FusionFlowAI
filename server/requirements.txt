@@ -24,3 +24,4 @@ pandas
 scikit-learn
 xgboost
 joblib
+httpx
