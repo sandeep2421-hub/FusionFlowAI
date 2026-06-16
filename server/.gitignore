@@ -1,0 +1,38 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+*.env
+
+# Logs
+*.log
+logs/
+
+# Database or large files (optional)
+*.db
+*.sqlite3
+
+# Models (optional)
+app/models/*.pkl
+
+# Data (optional)
+app/data/*.csv
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+

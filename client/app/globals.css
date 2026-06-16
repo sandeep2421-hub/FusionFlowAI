@@ -1,0 +1,286 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Navy + Cyan + Amber Palette (Professional Smart City Dashboard) */
+  --background: oklch(0.09 0.025 240);
+  --foreground: oklch(0.96 0.01 240);
+  --card: oklch(0.14 0.03 240);
+  --card-foreground: oklch(0.96 0.01 240);
+  --popover: oklch(0.14 0.03 240);
+  --popover-foreground: oklch(0.96 0.01 240);
+  
+  --primary: oklch(0.72 0.17 200); /* Cyan */
+  --primary-foreground: oklch(0.09 0.025 240);
+  
+  --secondary: oklch(0.55 0.16 240); /* Royal Navy Blue */
+  --secondary-foreground: oklch(0.96 0.01 240);
+  
+  --muted: oklch(0.18 0.03 240);
+  --muted-foreground: oklch(0.68 0.03 240);
+  
+  --accent: oklch(0.76 0.16 75); /* Amber */
+  --accent-foreground: oklch(0.09 0.025 240);
+  
+  --destructive: oklch(0.6 0.2 25); /* Crimson */
+  --destructive-foreground: oklch(0.98 0.01 240);
+  
+  --border: oklch(0.22 0.04 240);
+  --input: oklch(0.18 0.03 240);
+  --ring: oklch(0.72 0.17 200);
+  
+  --chart-1: oklch(0.72 0.17 200); /* Cyan */
+  --chart-2: oklch(0.76 0.16 75);  /* Amber */
+  --chart-3: oklch(0.55 0.16 240); /* Royal Navy */
+  --chart-4: oklch(0.62 0.17 310); /* Magenta/Purple */
+  --chart-5: oklch(0.65 0.22 140); /* Teal/Green */
+  
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Base Styles */
+* {
+  border-color: var(--border);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  font-weight: 600;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: 
+    radial-gradient(at 0% 0%, oklch(0.15 0.04 230 / 0.4) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, oklch(0.18 0.05 200 / 0.25) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, oklch(0.12 0.03 240 / 0.5) 0px, transparent 80%),
+    linear-gradient(to bottom, var(--background), oklch(0.07 0.02 240));
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom Standard CSS Utilities */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(
+    135deg,
+    oklch(0.14 0.03 240 / 0.45) 0%,
+    oklch(0.18 0.04 240 / 0.3) 100%
+  );
+  border: 1px solid oklch(0.22 0.04 240 / 0.4);
+  box-shadow: 
+    0 10px 30px -10px oklch(0 0 0 / 0.5), 
+    0 1px 0 0 oklch(1 1 1 / 0.05) inset;
+}
+
+.glass-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background-color: oklch(0.09 0.025 240 / 0.7);
+  border-b: 1px solid oklch(0.22 0.04 240 / 0.4);
+  box-shadow: 0 4px 20px -5px oklch(0 0 0 / 0.3);
+}
+
+.grid-pattern {
+  background-image: linear-gradient(to right, oklch(1 1 1 / 0.015) 1px, transparent 1px),
+                    linear-gradient(to bottom, oklch(1 1 1 / 0.015) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Micro-glows and shadow systems */
+.kpi-glow {
+  position: relative;
+}
+
+.kpi-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(135deg, var(--primary), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card {
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px -2px oklch(0 0 0 / 0.3);
+  /* Apply glass style attributes directly */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(
+    135deg,
+    oklch(0.14 0.03 240 / 0.45) 0%,
+    oklch(0.18 0.04 240 / 0.3) 100%
+  );
+  border: 1px solid oklch(0.22 0.04 240 / 0.4);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.72 0.17 200 / 0.5); /* primary/50 */
+}
+
+.stat-card:hover .kpi-glow::after {
+  opacity: 0.9;
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px oklch(0.72 0.17 200 / 0.15);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px oklch(0.76 0.16 75 / 0.15);
+}
+
+/* Congestion Levels & Status Badges */
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.status-dot-active {
+  background-color: #34d399; /* emerald-400 */
+  color: #34d399;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot-inactive {
+  background-color: #f43f5e; /* rose-500 */
+  color: #f43f5e;
+}
+
+.congestion-low {
+  background-color: rgb(16 185 129 / 0.1);
+  color: #34d399; /* emerald-400 */
+  border: 1px solid rgb(16 185 129 / 0.3);
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.congestion-moderate {
+  background-color: rgb(245 158 11 / 0.1);
+  color: #fbbf24; /* amber-400 */
+  border: 1px solid rgb(245 158 11 / 0.3);
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.congestion-high {
+  background-color: rgb(249 115 22 / 0.1);
+  color: #fb923c; /* orange-400 */
+  border: 1px solid rgb(249 115 22 / 0.3);
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.congestion-critical {
+  background-color: rgb(244 63 94 / 0.15);
+  color: #fb7185; /* rose-400 */
+  border: 1px solid rgb(244 63 94 / 0.3);
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Tab Styling */
+.dashboard-tab {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dashboard-tab-active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  box-shadow: 0 4px 10px oklch(0.72 0.17 200 / 0.2);
+}
+
+.dashboard-tab-inactive {
+  color: var(--muted-foreground);
+  background-color: transparent;
+}
+
+.dashboard-tab-inactive:hover {
+  background-color: oklch(0.18 0.03 240 / 0.5);
+  color: var(--foreground);
+}
