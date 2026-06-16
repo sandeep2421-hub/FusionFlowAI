@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Header, Depends
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import subprocess
 import sys
@@ -18,6 +19,10 @@ class OverrideRequest(BaseModel):
 class DataIngestRequest(BaseModel):
     date_time: str  # Format: "YYYY-MM-DD HH:MM:SS"
     vehicles: float
+
+class WriteFileRequest(BaseModel):
+    filename: str
+    content: str
 
 def run_retrain():
     # Execute the train_models.py script
@@ -131,3 +136,69 @@ def ingest_data(req: DataIngestRequest, auth: bool = Depends(verify_admin_token)
         return {"message": "Data ingested successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to ingest data: {str(e)}")
+
+@router.get("/files")
+def list_files(auth: bool = Depends(verify_admin_token)):
+    data_dir = "app/data"
+    if not os.path.exists(data_dir):
+        return []
+    files_list = []
+    for filename in os.listdir(data_dir):
+        if filename.endswith(".csv") or filename.endswith(".json") or filename.endswith(".pkl"):
+            filepath = os.path.join(data_dir, filename)
+            stat = os.stat(filepath)
+            files_list.append({
+                "name": filename,
+                "size_bytes": stat.st_size,
+                "last_modified": stat.st_mtime
+            })
+    return files_list
+
+@router.get("/files/download")
+def download_file(filename: str, auth: bool = Depends(verify_admin_token)):
+    data_dir = "app/data"
+    filepath = os.path.join(data_dir, filename)
+    normalized_path = os.path.abspath(filepath)
+    allowed_prefix = os.path.abspath(data_dir)
+    if not normalized_path.startswith(allowed_prefix):
+        raise HTTPException(status_code=403, detail="Access denied. Path traversal detected.")
+        
+    if not os.path.exists(filepath) or not os.path.isfile(filepath):
+        raise HTTPException(status_code=404, detail="File not found.")
+    
+    return FileResponse(path=filepath, filename=filename, media_type="application/octet-stream")
+
+@router.get("/files/read")
+def read_file(filename: str, auth: bool = Depends(verify_admin_token)):
+    data_dir = "app/data"
+    filepath = os.path.join(data_dir, filename)
+    normalized_path = os.path.abspath(filepath)
+    allowed_prefix = os.path.abspath(data_dir)
+    if not normalized_path.startswith(allowed_prefix):
+        raise HTTPException(status_code=403, detail="Access denied. Path traversal detected.")
+        
+    if not os.path.exists(filepath) or not os.path.isfile(filepath):
+        raise HTTPException(status_code=404, detail="File not found.")
+        
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {"filename": filename, "content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+
+@router.post("/files/write")
+def write_file(req: WriteFileRequest, auth: bool = Depends(verify_admin_token)):
+    data_dir = "app/data"
+    filepath = os.path.join(data_dir, req.filename)
+    normalized_path = os.path.abspath(filepath)
+    allowed_prefix = os.path.abspath(data_dir)
+    if not normalized_path.startswith(allowed_prefix):
+        raise HTTPException(status_code=403, detail="Access denied. Path traversal detected.")
+        
+    try:
+        with open(filepath, "w", encoding="utf-8", newline="") as f:
+            f.write(req.content)
+        return {"message": f"File '{req.filename}' written successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")

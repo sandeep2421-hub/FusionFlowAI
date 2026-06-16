@@ -49,6 +49,14 @@ export default function AdminPage() {
   // Notification Toast State
   const [notification, setNotification] = useState<{ message: string; type: "error" | "success" | "alert" } | null>(null)
 
+  // File Manager State
+  const [files, setFiles] = useState<{ name: string; size_bytes: number; last_modified: number }[]>([])
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
+  const [editingFile, setEditingFile] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState("")
+  const [isReadingFile, setIsReadingFile] = useState(false)
+  const [isSavingFile, setIsSavingFile] = useState(false)
+
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || ""
 
   useEffect(() => {
@@ -61,6 +69,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (token) {
       fetchStats()
+      fetchFiles()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
@@ -201,6 +210,94 @@ export default function AdminPage() {
       showNotification(`❌ ${errMsg}`, "error")
     } finally {
       setIsIngesting(false)
+    }
+  }
+
+  const fetchFiles = async () => {
+    if (!token) return
+    setIsLoadingFiles(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/files`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setFiles(data)
+      }
+    } catch (err) {
+      console.error("Failed to fetch files:", err)
+    } finally {
+      setIsLoadingFiles(false)
+    }
+  }
+
+  const handleDownloadFile = async (filename: string) => {
+    if (!token) return
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/files/download?filename=${filename}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error("Download failed")
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      showNotification(`💾 Downloaded ${filename} successfully!`, "success")
+    } catch {
+      showNotification("❌ Failed to download file", "error")
+    }
+  }
+
+  const handleOpenFileEditor = async (filename: string) => {
+    if (!token) return
+    setIsReadingFile(true)
+    setEditingFile(filename)
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/files/read?filename=${filename}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error("Failed to read file")
+      const data = await res.json()
+      setEditContent(data.content)
+      showNotification(`✏️ Loaded ${filename} for editing`, "success")
+    } catch {
+      showNotification("❌ Failed to load file content", "error")
+      setEditingFile(null)
+    } finally {
+      setIsReadingFile(false)
+    }
+  }
+
+  const handleSaveFileEdits = async () => {
+    if (!token || !editingFile) return
+    setIsSavingFile(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/files/write`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          filename: editingFile,
+          content: editContent
+        })
+      })
+      if (!res.ok) throw new Error("Save failed")
+      showNotification(`💾 File '${editingFile}' saved successfully!`, "success")
+      setEditingFile(null)
+      setEditContent("")
+      fetchFiles()
+      fetchStats()
+    } catch {
+      showNotification("❌ Failed to save file edits", "error")
+    } finally {
+      setIsSavingFile(false)
     }
   }
 
@@ -553,6 +650,142 @@ export default function AdminPage() {
                   {isIngesting ? "INGESTING..." : "INGEST RECORD"}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Row 4: Database File Manager */}
+        <section className="space-y-6">
+          <Card className="glass">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Database className="w-5 h-5 text-primary" />
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider font-display">Database File Browser & Editor</CardTitle>
+                </div>
+                <CardDescription className="text-xs">
+                  Manage raw database and configuration files. You can download present files or edit them directly in the browser.
+                </CardDescription>
+              </div>
+              <button onClick={fetchFiles} disabled={isLoadingFiles} className="p-1 hover:bg-muted/40 rounded transition">
+                <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoadingFiles ? "animate-spin" : ""}`} />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* File List */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {files.map((file) => (
+                  <div key={file.name} className="flex items-center justify-between p-4 rounded-xl border border-border/20 bg-[#090b11]/30 hover:border-primary/20 transition duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                        <Terminal className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-foreground font-mono">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          Size: {file.size_bytes > 1024 * 1024 
+                            ? `${(file.size_bytes / (1024 * 1024)).toFixed(2)} MB` 
+                            : `${(file.size_bytes / 1024).toFixed(1)} KB`}
+                          {" | "}
+                          Mod: {new Date(file.last_modified * 1000).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadFile(file.name)}
+                        className="h-8 text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1 border-border/60 hover:bg-muted/40 cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        Download
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenFileEditor(file.name)}
+                        className="h-8 bg-primary hover:bg-primary/90 text-background text-[10px] font-bold tracking-wider uppercase flex items-center gap-1 cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-edit"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {files.length === 0 && !isLoadingFiles && (
+                  <p className="text-xs text-muted-foreground italic font-mono col-span-2 text-center py-6">No CSV/PKL files detected in dataset folder.</p>
+                )}
+              </div>
+
+              {/* Edit Panel Container */}
+              <AnimatePresence>
+                {editingFile && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="border border-border/20 rounded-xl overflow-hidden bg-[#0e121a]/90 backdrop-blur-md"
+                  >
+                    <div className="flex items-center justify-between px-4 py-3 bg-muted/10 border-b border-border/15">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground">Editing Database File: <span className="text-primary font-bold">{editingFile}</span></span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setEditingFile(null); setEditContent(""); }}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                      </Button>
+                    </div>
+
+                    <div className="p-4 space-y-4">
+                      {isReadingFile ? (
+                        <div className="h-60 flex items-center justify-center gap-2 text-xs text-muted-foreground font-mono">
+                          <RefreshCw className="w-4 h-4 animate-spin text-primary" /> Loading content...
+                        </div>
+                      ) : (
+                        <>
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full h-80 bg-[#06080d] text-foreground border border-border/30 rounded-lg p-4 font-mono text-xs focus:ring-1 focus:ring-primary focus:outline-none leading-relaxed resize-y"
+                            spellCheck={false}
+                          />
+                          <div className="flex items-center justify-end gap-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => { setEditingFile(null); setEditContent(""); }}
+                              className="h-9 border-border/80 hover:bg-muted text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleSaveFileEdits}
+                              disabled={isSavingFile}
+                              className="h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1 text-xs"
+                            >
+                              {isSavingFile ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                  Save Changes
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </CardContent>
           </Card>
         </section>
